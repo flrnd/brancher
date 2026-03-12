@@ -1,5 +1,5 @@
 // Package provider
-package provider
+package github
 
 import (
 	"context"
