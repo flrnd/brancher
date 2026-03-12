@@ -1,11 +1,14 @@
 package task
 
-import "context"
+import (
+	"context"
+
+	"github.com/flrnd/brancher/internal/provider"
+)
 
 type Provider interface {
-	Name() string
+	Name() provider.Name
 	RequiredEnv() []string
-
 	ListTasks(ctx context.Context) ([]Task, error)
 	GetTask(ctx context.Context, id string) (Task, error)
 }
