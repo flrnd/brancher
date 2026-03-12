@@ -1,4 +1,4 @@
-// Package provider
+// Package github
 package github
 
 import (
