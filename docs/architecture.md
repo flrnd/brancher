@@ -279,7 +279,7 @@ issue-id-title
 
 # Git Integration
 
-Brancher interacts with Git by invoking the system Git binary.
+Brancher uses the `go-git` library for Git operations.
 
 Example command:
 
@@ -287,7 +287,7 @@ Example command:
 git checkout -b <branch>
 ```
 
-Using the native Git binary ensures maximum compatibility and avoids issues with embedded Git implementations.
+Using `go-git` provides a pure Go implementation with no external dependencies on system Git binaries.
 
 ---
 
@@ -343,8 +343,9 @@ Expected dependencies:
 | cobra      | CLI framework     |
 | Viper      | config framework  |
 | go-github  | GitHub API client |
+| go-git     | Git operations    |
 
-Git operations are executed through the system Git binary rather than Go Git libraries.
+Git operations are executed using the `go-git` library rather than system Git binary calls.
 
 ---
 
