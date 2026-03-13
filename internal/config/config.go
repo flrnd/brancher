@@ -24,19 +24,19 @@ type BranchConfig struct {
 
 type fieldRule struct {
 	name  string
-	field *string
+	field string
 }
 
 func (c *Config) Validate() error {
 	rules := []fieldRule{
-		{name: "provider", field: (*string)(&c.Provider)},
-		{name: "project.owner", field: &c.Project.Owner},
-		{name: "project.repo", field: &c.Project.Repo},
-		{name: "branch.strategy", field: &c.Branch.Strategy},
+		{name: "provider", field: string(c.Provider)},
+		{name: "project.owner", field: c.Project.Owner},
+		{name: "project.repo", field: c.Project.Repo},
+		{name: "branch.strategy", field: c.Branch.Strategy},
 	}
 
 	for _, rule := range rules {
-		if *rule.field == "" {
+		if rule.field == "" {
 			return fmt.Errorf("%s is required", rule.name)
 		}
 	}
