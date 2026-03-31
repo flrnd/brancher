@@ -1,8 +1,13 @@
 package git
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
+
+	urlpkg "net/url"
 )
 
 type Driver interface {
@@ -12,6 +17,10 @@ type Driver interface {
 	ListRemoteBranches() ([]Branch, error)
 	ListAllBranches() ([]Branch, error)
 	CurrentBranch() (Branch, error)
+}
+
+type RemoteReader interface {
+	OriginURL() (string, error)
 }
 
 type GoGitDriver struct {
@@ -29,6 +38,10 @@ func NewDriver() (*GoGitDriver, error) {
 	return &GoGitDriver{
 		repo: repo,
 	}, nil
+}
+
+func NewRemoteReader() (RemoteReader, error) {
+	return NewDriver()
 }
 
 func (d *GoGitDriver) CurrentBranch() (Branch, error) {
@@ -108,4 +121,44 @@ func (d *GoGitDriver) listBranches(filter func(*plumbing.Reference) bool) ([]Bra
 	}
 
 	return branches, nil
+}
+
+func (d *GoGitDriver) OriginURL() (string, error) {
+	remote, err := d.repo.Remote("origin")
+	if err != nil {
+		return "", err
+	}
+
+	if len(remote.Config().URLs) == 0 {
+		return "", fmt.Errorf("no remote URL found")
+	}
+
+	return remote.Config().URLs[0], nil
+}
+
+func ParseRemote(raw string) (owner, repo string, err error) {
+	url := strings.TrimSpace(raw)
+
+	if strings.HasPrefix(url, "git@") {
+		i := strings.Index(url, ":")
+		if i == -1 {
+			return "", "", fmt.Errorf("invalid remote format")
+		}
+		url = url[i+1:]
+	} else {
+		u, err := urlpkg.Parse(url)
+		if err != nil {
+			return "", "", err
+		}
+		url = strings.TrimPrefix(u.Path, "/")
+	}
+
+	url = strings.TrimSuffix(url, ".git")
+
+	parts := strings.Split(url, "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid remote path")
+	}
+
+	return parts[0], parts[1], nil
 }
