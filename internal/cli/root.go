@@ -1,7 +1,10 @@
 // Package cli
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/flrnd/brancher/internal/git"
+	"github.com/spf13/cobra"
+)
 
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -10,8 +13,7 @@ func NewRootCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		NewInitCommand(),
-		NewTasksCommand(),
+		NewInitCommand(git.NewRemoteReader),
 		NewStartCommand(),
 		NewTasksCommand(),
 	)

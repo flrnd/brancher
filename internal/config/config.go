@@ -2,9 +2,18 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/flrnd/brancher/internal/provider"
+	"gopkg.in/yaml.v3"
+)
+
+const (
+	ConfigDir  = ".brancher"
+	ConfigFile = "config.yml"
 )
 
 type Config struct {
@@ -42,4 +51,48 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func Path() string {
+	return filepath.Join(ConfigDir, ConfigFile)
+}
+
+func Load() (*Config, error) {
+	path := Path()
+
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	return &cfg, nil
+}
+
+func (c *Config) Save() error {
+	path := Path()
+
+	if err := os.MkdirAll(ConfigDir, 0o755); err != nil {
+		return err
+	}
+
+	data, err := yaml.Marshal(c)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0o644)
 }
