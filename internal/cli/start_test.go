@@ -21,6 +21,7 @@ func (f fakeProvider) RequiredEnv() []string { return nil }
 func (f fakeProvider) ListTasks(ctx context.Context) ([]task.Task, error) {
 	return nil, nil
 }
+
 func (f fakeProvider) GetTask(ctx context.Context, id string) (task.Task, error) {
 	return task.Task{
 		ID:    id,
@@ -66,5 +67,19 @@ func TestStartCommand(t *testing.T) {
 	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := out.String()
+
+	if output == "" {
+		t.Fatalf("expected output, got empty")
+	}
+
+	if !bytes.Contains([]byte(output), []byte("Test task")) {
+		t.Fatalf("expected task title in output, got: %s", output)
+	}
+
+	if !bytes.Contains([]byte(output), []byte("Created branch")) {
+		t.Fatalf("expected branch creation output, got: %s", output)
 	}
 }

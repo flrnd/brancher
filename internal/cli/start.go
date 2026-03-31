@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/flrnd/brancher/internal/branch"
+	"github.com/flrnd/brancher/internal/cli/output"
 	"github.com/flrnd/brancher/internal/config"
 	"github.com/flrnd/brancher/internal/git"
 	"github.com/flrnd/brancher/internal/task"
@@ -62,8 +63,8 @@ func NewStartCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Task: %s - %s\n", t.ID, t.Title)
-			fmt.Println("Created branch:", branchName)
+			output.Task(cmd, t.ID, t.Title)
+			output.BranchCreated(cmd, branchName)
 
 			return nil
 		},
