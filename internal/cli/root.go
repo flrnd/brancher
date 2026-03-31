@@ -13,6 +13,7 @@ func NewRootCommand() *cobra.Command {
 		NewInitCommand(),
 		NewTasksCommand(),
 		NewStartCommand(),
+		NewTasksCommand(),
 	)
 
 	return cmd
