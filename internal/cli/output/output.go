@@ -8,17 +8,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func println(cmd *cobra.Command, format string, args ...any) {
-	if _, err := fmt.Fprintf(cmd.OutOrStdout(), format+"\n", args...); err != nil {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "output error: %v\n", err)
+func write(cmd *cobra.Command, format string, args ...any) {
+	if _, err := fmt.Fprintf(cmd.OutOrStdout(), format, args...); err != nil {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "output error:", err)
 		os.Exit(1)
 	}
 }
 
+func Println(cmd *cobra.Command, format string, args ...any) {
+	write(cmd, format+"\n", args...)
+}
+
+func Prompt(cmd *cobra.Command, text string) {
+	write(cmd, "%s ", text)
+}
+
 func Task(cmd *cobra.Command, id, title string) {
-	println(cmd, "%s  %s", id, title)
+	write(cmd, "%s  %s", id, title)
 }
 
 func BranchCreated(cmd *cobra.Command, name string) {
-	println(cmd, "Created branch: %s", name)
+	write(cmd, "Created branch: %s", name)
 }
