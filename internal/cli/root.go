@@ -14,7 +14,6 @@ func NewRootCommand() *cobra.Command {
 
 	cmd.AddCommand(
 		NewInitCommand(git.NewRemoteReader),
-		NewTasksCommand(),
 		NewStartCommand(),
 		NewTasksCommand(),
 	)
