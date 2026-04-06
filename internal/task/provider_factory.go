@@ -2,9 +2,9 @@ package task
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/flrnd/brancher/internal/config"
+	"github.com/flrnd/brancher/internal/env"
 )
 
 func NewProvider(cfg *config.Config) (Provider, error) {
@@ -13,9 +13,9 @@ func NewProvider(cfg *config.Config) (Provider, error) {
 		return nil, fmt.Errorf("unknown provider: %s", cfg.Provider)
 	}
 
-	for _, env := range def.Required {
-		if os.Getenv(env) == "" {
-			return nil, fmt.Errorf("missing required environment variable: %s", env)
+	for _, envar := range def.Required {
+		if env.Get(envar) == "" {
+			return nil, fmt.Errorf("missing required environment variable: %s", envar)
 		}
 	}
 
