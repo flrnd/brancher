@@ -24,7 +24,7 @@ func Prompt(cmd *cobra.Command, text string) {
 }
 
 func Task(cmd *cobra.Command, id, title string) {
-	write(cmd, "%s  %s", id, title)
+	write(cmd, "#%s - %s\n", id, title)
 }
 
 func BranchCreated(cmd *cobra.Command, name string) {
