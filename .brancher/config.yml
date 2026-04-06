@@ -1,0 +1,6 @@
+provider: github
+project:
+    owner: flrnd
+    repo: brancher
+branch:
+    strategy: title

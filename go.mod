@@ -4,6 +4,7 @@ go 1.25.6
 
 require (
 	github.com/go-git/go-git/v6 v6.0.0-20260313081548-799bb393a8ed
+	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/text v0.35.0
 	gopkg.in/yaml.v3 v3.0.1
