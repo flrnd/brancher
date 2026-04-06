@@ -7,7 +7,7 @@ All architectural changes must update this document.
 
 Brancher is a CLI tool that creates Git branches from tasks managed in external systems such as GitHub Issues, Jira, GitLab, etc.
 
-The tool retrieves tasks from a provider and generates a branch name derived from the task title.
+The tool retrieves tasks from a provider and generates a branch name derived from provider task data.
 
 Example:
 
@@ -18,7 +18,7 @@ brancher start 42
 Result:
 
 ```
-git checkout -b something-does-not-work
+git checkout -b 42-something-does-not-work
 ```
 
 Branch names are generated using configurable strategies.
@@ -30,7 +30,7 @@ Branch names are generated using configurable strategies.
 ### Primary Goals
 
 * Simple CLI workflow
-* Clean branch naming from issue titles
+* Clean branch naming from provider tasks
 * Extensible provider system (GitHub, Jira, GitLab, etc.)
 * Team-friendly repository configuration
 * Secure token handling via environment variables
@@ -49,7 +49,7 @@ Branch names are generated using configurable strategies.
 * Initialize repository configuration
 * Fetch tasks from a provider
 * List available tasks
-* Create a branch from a task title
+* Create a branch from provider task data
 * Provider abstraction for future integrations
 
 ---
@@ -183,7 +183,7 @@ brancher start 15
 Result:
 
 ```
-git checkout -b something-does-not-work
+git checkout -b 15-something-does-not-work
 ```
 
 ---
@@ -470,38 +470,133 @@ GoGitDriver
 
 # Branch Generation
 
-Branch names are generated from task titles.
+Branch generation must be provider-agnostic.
 
-Example:
+Different providers expose task metadata differently:
+
+- GitHub often uses numeric task IDs such as `42`
+- Jira often uses prefixed task IDs such as `PROJ-123`
+- Some teams use structured titles such as `type(scope): summary`
+- Other teams use plain-text titles with no enforced format
+
+Brancher should support all of these cases.
+
+## MVP Goal
+
+The MVP branch naming behavior should:
+
+- work across providers without provider-specific parsing rules
+- preserve task identity in the generated branch name
+- generate readable branch names from plain-text titles
+- avoid requiring teams to rename or restructure existing tasks
+
+## MVP Default Strategy
+
+The default branch strategy is provider-agnostic and uses:
 
 ```
-Something does not work
+<task-id>-<title-slug>
 ```
 
-Becomes:
+Examples:
 
 ```
-something-does-not-work
+Task.ID    = 42
+Task.Title = Something does not work
+Branch     = 42-something-does-not-work
 ```
 
-## Generation Rules
+```
+Task.ID    = PROJ-123
+Task.Title = Implement GitHub task provider
+Branch     = proj-123-implement-github-task-provider
+```
+
+This default is the safest baseline because it:
+
+- works for GitHub, Jira, GitLab, and similar providers
+- preserves useful provider task identity
+- supports Jira-style prefixed ticket keys naturally
+- does not depend on structured title conventions
+- keeps the MVP implementation simple and predictable
+
+## Slug Rules
+
+The `<title-slug>` portion must:
 
 1. Convert to lowercase
 2. Remove punctuation
-3. Replace spaces with hyphens
+3. Replace spaces and repeated separators with hyphens
 4. Normalize unicode characters
+5. Trim leading and trailing separators
 
-## Branch Strategies
+The `<task-id>` portion should also be normalized to lowercase before being included in the final branch name.
 
-Strategy is configurable. Future strategies may include:
+## Recommended Task Title Convention
+
+Brancher does not require a specific task title convention.
+
+However, for teams that want more expressive and consistent naming, the recommended title format is:
 
 ```
-id-title
-label-title
-issue-id-title
-feat/login
-fix/payment-timeout
+type(scope): summary
 ```
+
+Examples:
+
+```
+feat(provider): implement GitHub task provider
+fix(cli): print each task on its own line
+refactor(branch): separate parsing from slug generation
+```
+
+This format is recommended because it:
+
+- is familiar to teams already using Conventional Commit-style naming
+- captures change intent
+- preserves domain or ownership context
+- can support richer branch naming strategies in the future
+
+## Future Structured Strategies
+
+Structured title parsing is not part of the MVP default behavior.
+
+In future versions, Brancher may support additional branch strategies that interpret structured titles such as:
+
+```
+type(scope): summary
+```
+
+Example input:
+
+```
+Task.ID    = 42
+Task.Title = feat(provider): implement GitHub task provider
+```
+
+Potential future output:
+
+```
+feature/provider/42-implement-github-task-provider
+```
+
+If structured strategies are introduced later, they must fall back cleanly to the default format:
+
+```
+<task-id>-<title-slug>
+```
+
+when the title does not match the expected structure.
+
+## Non-Goals for MVP
+
+The MVP does not include:
+
+- provider-specific branch naming rules
+- parsing structured titles by default
+- configurable branch templates
+- nested scopes such as `provider/github`
+- labels or metadata affecting branch names
 
 ---
 
@@ -535,7 +630,7 @@ brancher start 42
 Branch created:
 
 ```
-something-does-not-work
+42-something-does-not-work
 ```
 
 ---
