@@ -5,60 +5,54 @@ All architectural changes must update this document.
 
 ## Overview
 
-Brancher is a CLI tool that creates Git branches from tasks managed in external systems such as GitHub Issues, Jira, GitLab, etc.
+Brancher is a CLI tool that creates Git branches from tasks managed in external systems such as GitHub Issues, Jira, GitLab, and similar providers.
 
 The tool retrieves tasks from a provider and generates a branch name derived from provider task data.
 
 Example:
 
-```
+```text
 brancher start 42
 ```
 
-Result:
+Current result:
 
-```
-git checkout -b 42-something-does-not-work
+```text
+branch 42-something-does-not-work created
 ```
 
 Branch names are generated using configurable strategies.
 
----
-
-# Goals
+## Goals
 
 ### Primary Goals
 
-* Simple CLI workflow
-* Clean branch naming from provider tasks
-* Extensible provider system (GitHub, Jira, GitLab, etc.)
-* Team-friendly repository configuration
-* Secure token handling via environment variables
+- Simple CLI workflow
+- Clean branch naming from provider tasks
+- Extensible provider system
+- Team-friendly repository configuration
+- Secure token handling via environment variables
 
 ### Non-Goals (v1)
 
-* Complex project board workflows
-* OAuth authentication
-* Plugin systems
-* Interactive TUI interfaces
+- Complex project board workflows
+- OAuth authentication
+- Plugin systems
+- Interactive TUI interfaces
 
----
+## Core Features (v1)
 
-# Core Features (v1)
+- Initialize repository configuration
+- Fetch tasks from a provider
+- List available tasks
+- Create a branch from provider task data
+- Provider abstraction for future integrations
 
-* Initialize repository configuration
-* Fetch tasks from a provider
-* List available tasks
-* Create a branch from provider task data
-* Provider abstraction for future integrations
-
----
-
-# Architecture Overview
+## Architecture Overview
 
 The application is composed of several layers:
 
-```
+```text
 CLI
  ↓
 Config Loader
@@ -74,83 +68,74 @@ Git Driver
 
 Each layer has a clear responsibility and avoids cross-layer coupling.
 
----
+## Repository Structure
 
-# Repository Structure
-
-```
+```text
 brancher/
-
-cmd/
-  brancher/
-    main.go
-
-internal/
-
-  cli/
-    root.go
-    init.go
-    tasks.go
-    start.go
-
-  config/
-    config.go
-    loader.go
-
-  provider/
-    types.go
-
-  task/
-    task.go
-    provider.go
-    provider_registry.go
-    provider_factory.go
-
-  git/
-    driver.go
-    repo.go
-    branch.go
-
-  branch/
-    generator.go
-    strategy.go
-
-providers/
-
-  github/
-    provider.go
-    env.go
-
-pkg/
-
-  slug/
-    slug.go
+├─ cmd/
+│  └─ brancher/
+│     └─ main.go
+├─ docs/
+│  ├─ current.md
+│  └─ spec.md
+├─ internal/
+│  ├─ branch/
+│  │  ├─ generator.go
+│  │  ├─ strategy.go
+│  │  └─ title_strategy.go
+│  ├─ cli/
+│  │  ├─ init.go
+│  │  ├─ root.go
+│  │  ├─ start.go
+│  │  ├─ task.go
+│  │  ├─ input/
+│  │  └─ output/
+│  ├─ config/
+│  │  └─ config.go
+│  ├─ env/
+│  │  └─ env.go
+│  ├─ git/
+│  │  ├─ driver.go
+│  │  └─ repo.go
+│  ├─ provider/
+│  │  ├─ github/
+│  │  │  ├─ client.go
+│  │  │  └─ provider.go
+│  │  └─ types.go
+│  └─ task/
+│     ├─ provider.go
+│     ├─ provider_factory.go
+│     ├─ provider_registry.go
+│     └─ task.go
+└─ pkg/
+   └─ slug/
+      └─ slug.go
 ```
 
----
+## CLI Commands
 
-# CLI Commands
+### Initialize Repository
 
-## Initialize Repository
-
-```
+```text
 brancher init
 ```
 
 Creates repository configuration in `.brancher/config.yml`.
 
-Steps:
+Current flow:
 
 1. Detect Git repository
-2. Ask user for provider
-3. Configure project details
-4. Create `.brancher/config.yml`
+2. Detect `origin` remote
+3. Parse owner and repo from the remote URL
+4. Prompt for provider, owner, and repo
+5. Write `.brancher/config.yml`
 
----
+Current implementation note:
+- remote autodetection is required today; clean fallback to fully manual owner/repo entry is still future work
 
-## List Tasks
+### List Tasks
 
-```
+```text
 brancher tasks
 ```
 
@@ -158,17 +143,15 @@ Lists tasks from the configured provider.
 
 Example:
 
-```
+```text
 12  Fix login bug
 15  Something does not work
 22  Improve caching
 ```
 
----
+### Start Work on Task
 
-## Start Work on Task
-
-```
+```text
 brancher start <task-id>
 ```
 
@@ -176,23 +159,24 @@ Creates a branch from the selected task.
 
 Example:
 
-```
+```text
 brancher start 15
 ```
 
-Result:
+Current result:
 
+```text
+15-something-does-not-work
 ```
-git checkout -b 15-something-does-not-work
-```
 
----
+Current implementation note:
+- `start` currently creates the branch ref but does not check out the branch yet
 
-# Configuration
+## Configuration
 
 Configuration is stored in the repository:
 
-```
+```text
 .brancher/config.yml
 ```
 
@@ -211,21 +195,20 @@ branch:
 
 This configuration is safe to commit and intended to be shared across teams.
 
-## Configuration Philosophy
+### Configuration Philosophy
 
 Configuration is separated into two concerns:
 
-| Type                     | Location                  | Purpose                       |
-| ------------------------ | ------------------------- | ----------------------------- |
-| Repository configuration | `.brancher/config.yml`    | Project settings              |
-| Provider configuration   | `.brancher/provider.yml`  | Provider-specific settings    |
-| Secrets                  | Environment variables     | Authentication                |
+| Type | Location | Purpose |
+| --- | --- | --- |
+| Repository configuration | `.brancher/config.yml` | Project settings |
+| Secrets | Environment variables | Authentication |
 
-This prevents accidental credential leaks while allowing repository configuration to be versioned.
+Tokens are never stored in configuration files.
 
-## Config Loading Flow
+### Config Loading Flow
 
-```
+```text
 Load()
   ↓
 Locate .brancher/config.yml
@@ -241,101 +224,86 @@ Return Config
 
 Validation fails fast if required fields are missing.
 
-## Config Validation
+### Config Validation
 
-Validation uses a **rule-based pointer pattern** to avoid repetitive code.
+Validation is rule-based and value-based.
 
-Example rule:
+Current required fields:
 
-```
-{name: "project.owner", field: &c.Project.Owner}
-```
+- `provider`
+- `project.owner`
+- `project.repo`
+- `branch.strategy`
 
-Validation loop:
-
-```
-for _, rule := range rules {
-    if *rule.field == "" {
-        return error
-    }
-}
-```
-
----
-
-# Authentication
+## Authentication
 
 Tokens are provided via environment variables.
 
 Example:
 
-```
+```text
 export BRANCHER_GITHUB_TOKEN=xxxx
 ```
 
-Provider variables follow this pattern:
+Provider token variables follow this pattern:
 
-```
-BRANCHER_<Provider>_TOKEN
-```
-
-Examples:
-
-```
-BRANCHER_GITHUB_TOKEN
-BRANCHER_JIRA_TOKEN
-BRANCHER_GITLAB_TOKEN
+```text
+BRANCHER_<PROVIDER>_TOKEN
 ```
 
-If a required variable is missing, Brancher exits with an error:
+Defined today:
 
-```
-Missing environment variable: BRANCHER_GITHUB_TOKEN
-```
+- `BRANCHER_GITHUB_TOKEN`
+- `BRANCHER_JIRA_TOKEN`
+- `BRANCHER_GITLAB_TOKEN`
 
-**Tokens are never stored in configuration files.**
+Current implementation notes:
+- environment loading is centralized in `internal/env`
+- `.env` files are loaded via `godotenv`
+- only GitHub is currently wired through `env.ProviderToken(...)`
 
----
+If a required variable is missing, provider construction fails with an error before the provider is created.
 
-# Provider System
+## Provider System
 
 Providers supply tasks from external systems.
 
 Examples:
 
-* GitHub
-* Jira
-* GitLab
-* Linear
-* Trello
+- GitHub
+- Jira
+- GitLab
 
 Providers convert their API data into a common internal representation.
 
-## Task Model
+### Task Model
 
 All providers normalize their tasks into a common structure:
 
-```
+```text
 Task
  ├─ ID
  ├─ Title
  ├─ Labels
- └─ State
+ ├─ State
+ └─ URL
 ```
 
 Example:
 
-```
+```text
 ID: 42
 Title: Something does not work
 Labels: bug
+State: open
+URL: https://github.com/myorg/myrepo/issues/42
 ```
 
-## Provider Interface
+### Provider Interface
 
 Providers implement the interface:
 
-```
+```go
 type Provider interface {
     Name() provider.Name
     RequiredEnv() []string
@@ -346,24 +314,24 @@ type Provider interface {
 
 Responsibilities:
 
-| Method      | Purpose                                           |
-| ----------- | ------------------------------------------------- |
-| Name        | Provider identifier                               |
-| RequiredEnv | Environment variables required for authentication |
-| ListTasks   | Fetch available tasks                             |
-| GetTask     | Fetch a specific task                             |
+| Method | Purpose |
+| --- | --- |
+| `Name()` | Provider identifier |
+| `RequiredEnv()` | Environment variables required for authentication |
+| `ListTasks()` | Fetch available tasks |
+| `GetTask()` | Fetch a specific task |
 
-## Provider Registry
+### Provider Registry
 
 Providers register themselves via a registry.
 
-```
+```go
 RegisterProvider(Definition)
 ```
 
 Definition:
 
-```
+```go
 type Definition struct {
     Name     provider.Name
     Required []string
@@ -371,15 +339,15 @@ type Definition struct {
 }
 ```
 
-Registry stores provider metadata and constructors.
+The registry stores provider metadata and constructors.
 
-## Provider Factory
+### Provider Factory
 
 The provider factory creates providers dynamically.
 
 Flow:
 
-```
+```text
 config.provider
       ↓
 lookup provider in registry
@@ -391,57 +359,51 @@ call constructor
 return provider instance
 ```
 
-No switch statements are used.
+The factory does not use provider-specific switch statements.
 
-## Provider Naming
+### Provider Naming
 
-Provider identifiers use a strongly typed name.
+Provider identifiers use a strongly typed name:
 
-```
+```go
 type Name string
 ```
 
 Example:
 
-```
+```go
 const (
     GitHub Name = "github"
 )
 ```
 
-This avoids string duplication and typos.
+### Current GitHub Provider
 
-## Provider Implementation Example
+GitHub is the only implemented provider today.
 
-Example GitHub provider:
+Current behavior:
 
-```
-type GitHubProvider struct {
-    token string
-    owner string
-    repo  string
-}
-```
+- uses the GitHub Issues API
+- lists open issues
+- fetches an issue by ID
+- maps GitHub issues into internal `task.Task`
+- filters pull requests out of `ListTasks`
+- rejects pull requests in `GetTask`
 
-Environment variables are defined by the provider:
+Current limits:
 
-```
-const TokenEnv = "BRANCHER_GITHUB_TOKEN"
-```
+- list pagination is capped at the first 100 open issues
+- no dedicated integration or e2e provider tests yet
 
-Providers self-register using `init()`.
-
----
-
-# Git Driver
+## Git Driver
 
 The Git driver abstracts Git operations.
 
-Brancher uses the `go-git` library for Git operations, providing a pure Go implementation with no external dependencies on system Git binaries.
+Brancher uses the `go-git` library for Git operations, providing a pure Go implementation with no external dependency on the system `git` binary.
 
 Interface:
 
-```
+```go
 type Driver interface {
     CreateBranch(name string) error
     DeleteBranch(name string) error
@@ -455,20 +417,24 @@ type Driver interface {
 Methods:
 
 | Method | Description |
-|--------|-------------|
-| `ListLocalBranches()` | Returns only local branches |
-| `ListRemoteBranches()` | Returns only remote-tracking branches |
-| `ListAllBranches()` | Returns both local and remote branches |
+| --- | --- |
+| `CreateBranch()` | Create a local branch ref from `HEAD` |
+| `DeleteBranch()` | Delete a local branch ref |
+| `ListLocalBranches()` | Return only local branches |
+| `ListRemoteBranches()` | Return only remote-tracking branches |
+| `ListAllBranches()` | Return both local and remote branches |
+| `CurrentBranch()` | Return the current `HEAD` branch |
 
 Initial implementation uses:
 
-```
+```text
 GoGitDriver
 ```
 
----
+Current implementation note:
+- `CreateBranch()` only creates the ref today; checkout behavior is still future work
 
-# Branch Generation
+## Branch Generation
 
 Branch generation must be provider-agnostic.
 
@@ -481,7 +447,7 @@ Different providers expose task metadata differently:
 
 Brancher should support all of these cases.
 
-## MVP Goal
+### MVP Goal
 
 The MVP branch naming behavior should:
 
@@ -490,23 +456,23 @@ The MVP branch naming behavior should:
 - generate readable branch names from plain-text titles
 - avoid requiring teams to rename or restructure existing tasks
 
-## MVP Default Strategy
+### MVP Default Strategy
 
 The default branch strategy is provider-agnostic and uses:
 
-```
+```text
 <task-id>-<title-slug>
 ```
 
 Examples:
 
-```
+```text
 Task.ID    = 42
 Task.Title = Something does not work
 Branch     = 42-something-does-not-work
 ```
 
-```
+```text
 Task.ID    = PROJ-123
 Task.Title = Implement GitHub task provider
 Branch     = proj-123-implement-github-task-provider
@@ -518,33 +484,57 @@ This default is the safest baseline because it:
 - preserves useful provider task identity
 - supports Jira-style prefixed ticket keys naturally
 - does not depend on structured title conventions
-- keeps the MVP implementation simple and predictable
 
-## Slug Rules
+### Slug Rules
 
 The `<title-slug>` portion must:
 
 1. Convert to lowercase
-2. Remove punctuation
-3. Replace spaces and repeated separators with hyphens
-4. Normalize unicode characters
+2. Normalize unicode characters
+3. Treat common separators as word boundaries
+4. Collapse repeated separators into a single `-`
 5. Trim leading and trailing separators
 
-The `<task-id>` portion should also be normalized to lowercase before being included in the final branch name.
+The `<task-id>` portion is also normalized to lowercase before being included in the final branch name.
 
-## Recommended Task Title Convention
+Common separators currently include characters such as:
+
+- `-`
+- `_`
+- `/`
+- `\`
+- `.`
+- `,`
+- `:`
+- `;`
+- `(`
+- `)`
+- `[`
+- `]`
+- `{`
+- `}`
+
+Example:
+
+```text
+Task.ID    = 28
+Task.Title = bug(cli): Start command doesnt parse issue naming properly
+Branch     = 28-bug-cli-start-command-doesnt-parse-issue-naming-properly
+```
+
+### Recommended Task Title Convention
 
 Brancher does not require a specific task title convention.
 
 However, for teams that want more expressive and consistent naming, the recommended title format is:
 
-```
+```text
 type(scope): summary
 ```
 
 Examples:
 
-```
+```text
 feat(provider): implement GitHub task provider
 fix(cli): print each task on its own line
 refactor(branch): separate parsing from slug generation
@@ -557,36 +547,51 @@ This format is recommended because it:
 - preserves domain or ownership context
 - can support richer branch naming strategies in the future
 
-## Future Structured Strategies
+### Future Structured Strategies
 
 Structured title parsing is not part of the MVP default behavior.
 
 In future versions, Brancher may support additional branch strategies that interpret structured titles such as:
 
-```
+```text
 type(scope): summary
 ```
 
 Example input:
 
-```
+```text
 Task.ID    = 42
 Task.Title = feat(provider): implement GitHub task provider
 ```
 
 Potential future output:
 
-```
+```text
 feature/provider/42-implement-github-task-provider
 ```
 
 If structured strategies are introduced later, they must fall back cleanly to the default format:
 
-```
+```text
 <task-id>-<title-slug>
 ```
 
 when the title does not match the expected structure.
+
+## Testing and CI
+
+The repository currently validates core behavior through unit and command tests run with:
+
+```text
+make test
+```
+
+Current CI behavior:
+
+- GitHub Actions runs on pull requests
+- GitHub Actions runs on pushes to `main`
+- docs-only changes are skipped via path filters
+- the CI workflow currently runs `make build` and `make test`
 
 ## Non-Goals for MVP
 
@@ -597,116 +602,4 @@ The MVP does not include:
 - configurable branch templates
 - nested scopes such as `provider/github`
 - labels or metadata affecting branch names
-
----
-
-# Example Workflow
-
-Developer clones a repository:
-
-```
-git clone repo
-cd repo
-```
-
-Set token:
-
-```
-export BRANCHER_GITHUB_TOKEN=xxxx
-```
-
-List tasks:
-
-```
-brancher tasks
-```
-
-Start working:
-
-```
-brancher start 42
-```
-
-Branch created:
-
-```
-42-something-does-not-work
-```
-
----
-
-# Dependencies
-
-Brancher aims to keep dependencies minimal.
-
-| Dependency | Purpose           |
-| ---------- | ----------------- |
-| cobra      | CLI framework     |
-| yaml.v3    | YAML parsing      |
-| go-git     | Git operations    |
-
----
-
-# Design Principles
-
-Brancher follows these principles:
-
-* **Simplicity first**
-* **Extensible architecture**
-* **Secure credential handling**
-* **Minimal dependencies**
-* **Strongly typed identifiers**
-* **No magic strings**
-* **Early validation of configuration**
-* **Unix-style CLI design**
-
----
-
-# Future Enhancements
-
-## Provider Expansion
-
-Support additional providers:
-
-* Jira
-* GitLab
-* Linear
-* Trello
-
-## Interactive Task Selection
-
-Integration with fuzzy search tools such as `fzf`.
-
-```
-brancher start
-```
-
-Displays interactive task selector.
-
-## Smart Commit Messages
-
-Auto-generate commit messages from tasks.
-
-Example:
-
-```
-fix: login timeout (#42)
-```
-
-## Authentication Helpers
-
-Possible future command:
-
-```
-brancher auth login github
-```
-
-Using OAuth or OS keychains.
-
-## Automatic Branch Cleanup
-
-Track and clean up stale branches created by Brancher.
-
-## Global Configuration
-
-Optional global configuration for user preferences.
+- automatic checkout during `start`
