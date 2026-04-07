@@ -10,6 +10,8 @@ func TestGenerate(t *testing.T) {
 		{"Fix login bug", "fix-login-bug"},
 		{"Something does not work!!!", "something-does-not-work"},
 		{"Add OAuth (GitHub)", "add-oauth-github"},
+		{"bug(cli): Start command doesnt parse issue naming properly", "bug-cli-start-command-doesnt-parse-issue-naming-properly"},
+		{"feat[provider]: Add client", "feat-provider-add-client"},
 		{"Fix   multiple     spaces", "fix-multiple-spaces"},
 		{"Café login failure", "cafe-login-failure"},
 		{"Añadir autenticación", "anadir-autenticacion"},
