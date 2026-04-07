@@ -82,4 +82,8 @@ func TestStartCommand(t *testing.T) {
 	if !bytes.Contains([]byte(output), []byte("Created branch")) {
 		t.Fatalf("expected branch creation output, got: %s", output)
 	}
+
+	if !bytes.Contains([]byte(output), []byte("42-test-task")) {
+		t.Fatalf("expected id-prefixed branch name in output, got: %s", output)
+	}
 }

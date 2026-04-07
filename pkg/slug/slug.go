@@ -8,6 +8,23 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+var separators = map[rune]struct{}{
+	'-':  {},
+	'_':  {},
+	'/':  {},
+	'\\': {},
+	'.':  {},
+	',':  {},
+	':':  {},
+	';':  {},
+	'(':  {},
+	')':  {},
+	'[':  {},
+	']':  {},
+	'{':  {},
+	'}':  {},
+}
+
 func Generate(input string) string {
 	// Normalize unicode characters (é → e + accent mark)
 	s := norm.NFD.String(input)
@@ -27,7 +44,7 @@ func Generate(input string) string {
 			b.WriteRune(unicode.ToLower(r))
 			prevDash = false
 
-		case unicode.IsSpace(r) || r == '-' || r == '_':
+		case unicode.IsSpace(r) || isSeparator(r):
 			if !prevDash {
 				b.WriteRune('-')
 				prevDash = true
@@ -40,4 +57,9 @@ func Generate(input string) string {
 	result = strings.Trim(result, "-")
 
 	return result
+}
+
+func isSeparator(r rune) bool {
+	_, ok := separators[r]
+	return ok
 }

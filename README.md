@@ -15,7 +15,7 @@ brancher start 42
 Result:
 
 ```
-git checkout -b something-does-not-work
+git checkout -b 42-something-does-not-work
 ```
 
-Branch names are derived from the task title using a configurable strategy.
+Branch names are derived from provider task data using a configurable strategy.
