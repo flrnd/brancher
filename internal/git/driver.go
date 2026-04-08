@@ -14,9 +14,6 @@ type Driver interface {
 	CreateBranch(name string) error
 	CreateAndCheckoutBranch(name string) error
 	DeleteBranch(name string) error
-	ListLocalBranches() ([]Branch, error)
-	ListRemoteBranches() ([]Branch, error)
-	ListAllBranches() ([]Branch, error)
 	CurrentBranch() (Branch, error)
 }
 
@@ -94,47 +91,6 @@ func (d *GoGitDriver) DeleteBranch(name string) error {
 	}
 
 	return nil
-}
-
-func (d *GoGitDriver) ListLocalBranches() ([]Branch, error) {
-	return d.listBranches(func(ref *plumbing.Reference) bool {
-		return ref.Name().IsBranch()
-	})
-}
-
-func (d *GoGitDriver) ListRemoteBranches() ([]Branch, error) {
-	return d.listBranches(func(ref *plumbing.Reference) bool {
-		return ref.Name().IsRemote()
-	})
-}
-
-func (d *GoGitDriver) ListAllBranches() ([]Branch, error) {
-	return d.listBranches(func(ref *plumbing.Reference) bool {
-		return ref.Name().IsBranch() || ref.Name().IsRemote()
-	})
-}
-
-func (d *GoGitDriver) listBranches(filter func(*plumbing.Reference) bool) ([]Branch, error) {
-	var branches []Branch
-
-	refs, err := d.repo.References()
-	if err != nil {
-		return nil, err
-	}
-	defer refs.Close()
-	err = refs.ForEach(func(ref *plumbing.Reference) error {
-		if filter(ref) {
-			branches = append(branches, Branch{
-				RefName: ref.Name(),
-			})
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return branches, nil
 }
 
 func (d *GoGitDriver) OriginURL() (string, error) {
