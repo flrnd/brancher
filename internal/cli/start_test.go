@@ -40,11 +40,8 @@ func (f *fakeDriver) CreateAndCheckoutBranch(name string) error {
 	return nil
 }
 
-func (f *fakeDriver) DeleteBranch(name string) error            { return nil }
-func (f *fakeDriver) ListLocalBranches() ([]git.Branch, error)  { return nil, nil }
-func (f *fakeDriver) ListRemoteBranches() ([]git.Branch, error) { return nil, nil }
-func (f *fakeDriver) ListAllBranches() ([]git.Branch, error)    { return nil, nil }
-func (f *fakeDriver) CurrentBranch() (git.Branch, error)        { return git.Branch{}, nil }
+func (f *fakeDriver) DeleteBranch(name string) error     { return nil }
+func (f *fakeDriver) CurrentBranch() (git.Branch, error) { return git.Branch{}, nil }
 
 func TestStartCommand(t *testing.T) {
 	loadConfig = func() (*config.Config, error) {
