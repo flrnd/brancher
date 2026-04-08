@@ -59,7 +59,7 @@ func NewStartCommand() *cobra.Command {
 				return err
 			}
 
-			if err := driver.CreateBranch(branchName); err != nil {
+			if err := driver.CreateAndCheckoutBranch(branchName); err != nil {
 				return err
 			}
 

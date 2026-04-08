@@ -29,14 +29,22 @@ func (f fakeProvider) GetTask(ctx context.Context, id string) (task.Task, error)
 	}, nil
 }
 
-type fakeDriver struct{}
+type fakeDriver struct {
+	createdAndCheckedOut []string
+}
 
-func (f fakeDriver) CreateBranch(name string) error            { return nil }
-func (f fakeDriver) DeleteBranch(name string) error            { return nil }
-func (f fakeDriver) ListLocalBranches() ([]git.Branch, error)  { return nil, nil }
-func (f fakeDriver) ListRemoteBranches() ([]git.Branch, error) { return nil, nil }
-func (f fakeDriver) ListAllBranches() ([]git.Branch, error)    { return nil, nil }
-func (f fakeDriver) CurrentBranch() (git.Branch, error)        { return git.Branch{}, nil }
+func (f *fakeDriver) CreateBranch(name string) error { return nil }
+
+func (f *fakeDriver) CreateAndCheckoutBranch(name string) error {
+	f.createdAndCheckedOut = append(f.createdAndCheckedOut, name)
+	return nil
+}
+
+func (f *fakeDriver) DeleteBranch(name string) error            { return nil }
+func (f *fakeDriver) ListLocalBranches() ([]git.Branch, error)  { return nil, nil }
+func (f *fakeDriver) ListRemoteBranches() ([]git.Branch, error) { return nil, nil }
+func (f *fakeDriver) ListAllBranches() ([]git.Branch, error)    { return nil, nil }
+func (f *fakeDriver) CurrentBranch() (git.Branch, error)        { return git.Branch{}, nil }
 
 func TestStartCommand(t *testing.T) {
 	loadConfig = func() (*config.Config, error) {
@@ -52,8 +60,10 @@ func TestStartCommand(t *testing.T) {
 		return fakeProvider{}, nil
 	}
 
+	driver := &fakeDriver{}
+
 	newGitDriver = func() (git.Driver, error) {
-		return fakeDriver{}, nil
+		return driver, nil
 	}
 
 	cmd := NewStartCommand()
@@ -85,5 +95,13 @@ func TestStartCommand(t *testing.T) {
 
 	if !bytes.Contains([]byte(output), []byte("42-test-task")) {
 		t.Fatalf("expected id-prefixed branch name in output, got: %s", output)
+	}
+
+	if len(driver.createdAndCheckedOut) != 1 {
+		t.Fatalf("expected one create-and-checkout call, got %d", len(driver.createdAndCheckedOut))
+	}
+
+	if driver.createdAndCheckedOut[0] != "42-test-task" {
+		t.Fatalf("expected checkout branch name 42-test-task, got: %s", driver.createdAndCheckedOut[0])
 	}
 }
