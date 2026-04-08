@@ -406,10 +406,8 @@ Interface:
 ```go
 type Driver interface {
     CreateBranch(name string) error
+    CreateAndCheckoutBranch(name string) error
     DeleteBranch(name string) error
-    ListLocalBranches() ([]Branch, error)
-    ListRemoteBranches() ([]Branch, error)
-    ListAllBranches() ([]Branch, error)
     CurrentBranch() (Branch, error)
 }
 ```
@@ -419,10 +417,8 @@ Methods:
 | Method | Description |
 | --- | --- |
 | `CreateBranch()` | Create a local branch ref from `HEAD` |
+| `CreateAndCheckoutBranch()` | Create a local branch ref from `HEAD` and switch the worktree to it |
 | `DeleteBranch()` | Delete a local branch ref |
-| `ListLocalBranches()` | Return only local branches |
-| `ListRemoteBranches()` | Return only remote-tracking branches |
-| `ListAllBranches()` | Return both local and remote branches |
 | `CurrentBranch()` | Return the current `HEAD` branch |
 
 Initial implementation uses:
@@ -432,7 +428,8 @@ GoGitDriver
 ```
 
 Current implementation note:
-- `CreateBranch()` only creates the ref today; checkout behavior is still future work
+- `CreateBranch()` is the low-level ref-only operation
+- `CreateAndCheckoutBranch()` is used by `brancher start` to provide checkout behavior similar to `git checkout -b`
 
 ## Branch Generation
 
