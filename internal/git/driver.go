@@ -12,6 +12,7 @@ import (
 
 type Driver interface {
 	CreateBranch(name string) error
+	CreateAndCheckoutBranch(name string) error
 	DeleteBranch(name string) error
 	ListLocalBranches() ([]Branch, error)
 	ListRemoteBranches() ([]Branch, error)
@@ -70,6 +71,19 @@ func (d *GoGitDriver) CreateBranch(name string) error {
 	}
 
 	return nil
+}
+
+func (d *GoGitDriver) CreateAndCheckoutBranch(name string) error {
+	worktree, err := d.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	return worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(name),
+		Create: true,
+		Keep:   true,
+	})
 }
 
 func (d *GoGitDriver) DeleteBranch(name string) error {
